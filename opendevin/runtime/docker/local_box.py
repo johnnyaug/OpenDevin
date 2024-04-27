@@ -2,6 +2,7 @@ import atexit
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 from opendevin.core.config import config
 from opendevin.core.logger import opendevin_logger as logger
@@ -26,11 +27,16 @@ from opendevin.runtime.sandbox import Sandbox
 
 
 class LocalBox(Sandbox):
-    def __init__(self, timeout: int = config.sandbox_timeout):
-        os.makedirs(config.workspace_base, exist_ok=True)
+    def __init__(
+        self,
+        timeout: int = config.sandbox_timeout,
+    ):
+        self.workspace = str(Path(config.workspace_base))
+        os.makedirs(self.workspace, exist_ok=True)
         self.timeout = timeout
         self.background_commands: dict[int, Process] = {}
         self.cur_background_id = 0
+
         atexit.register(self.cleanup)
         super().__init__()
 
@@ -45,7 +51,6 @@ class LocalBox(Sandbox):
                 text=True,
                 capture_output=True,
                 timeout=timeout,
-                cwd=config.workspace_base,
                 env=self._env,
             )
             return completed_process.returncode, completed_process.stdout.strip()
@@ -58,7 +63,7 @@ class LocalBox(Sandbox):
             f'mkdir -p {sandbox_dest}',
             shell=True,
             text=True,
-            cwd=config.workspace_base,
+            cwd=self.workspace,
             env=self._env,
         )
         if res.returncode != 0:
@@ -69,7 +74,7 @@ class LocalBox(Sandbox):
                 f'cp -r {host_src} {sandbox_dest}',
                 shell=True,
                 text=True,
-                cwd=config.workspace_base,
+                cwd=self.workspace,
                 env=self._env,
             )
             if res.returncode != 0:
@@ -81,7 +86,7 @@ class LocalBox(Sandbox):
                 f'cp {host_src} {sandbox_dest}',
                 shell=True,
                 text=True,
-                cwd=config.workspace_base,
+                cwd=self.workspace,
                 env=self._env,
             )
             if res.returncode != 0:
@@ -96,7 +101,7 @@ class LocalBox(Sandbox):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            cwd=config.workspace_base,
+            cwd=self.workspace,
         )
         bg_cmd = DockerProcess(
             id=self.cur_background_id, command=cmd, result=process, pid=process.pid

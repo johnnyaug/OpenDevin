@@ -1,13 +1,14 @@
 import React from "react";
-import { waitFor, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { act } from "react-dom/test-utils";
 import { renderWithProviders } from "test-utils";
-import { describe, it, expect, vi, Mock } from "vitest";
-import FileExplorer from "./FileExplorer";
-import { uploadFiles, listFiles } from "#/services/fileService";
-import toast from "#/utils/toast";
+import { describe, expect, it, Mock, vi } from "vitest";
+
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { listFiles, uploadFiles } from "#/services/fileService";
 import AgentState from "#/types/AgentState";
+import toast from "#/utils/toast";
+import FileExplorer from "./FileExplorer";
 
 const toastSpy = vi.spyOn(toast, "error");
 

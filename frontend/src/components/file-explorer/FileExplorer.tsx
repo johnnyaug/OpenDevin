@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   IoIosArrowBack,
   IoIosArrowForward,
-  IoIosRefresh,
   IoIosCloudUpload,
+  IoIosRefresh,
 } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
 import { IoFileTray } from "react-icons/io5";
@@ -89,29 +89,33 @@ function FileExplorer() {
   const [isHidden, setIsHidden] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
   const [files, setFiles] = React.useState<string[]>([]);
-  const { curAgentState } = useSelector((state: RootState) => state.agent);
+  const { agent: agentState, code: codeState } = useSelector(
+    (state: RootState) => state,
+  );
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   const dispatch = useDispatch();
 
   const selectFileInput = () => {
     fileInputRef.current?.click(); // Trigger the file browser
   };
 
-  const refreshWorkspace = async () => {
+  const refreshWorkspace = useCallback(async () => {
+    console.log(JSON.stringify(agentState));
     if (
-      curAgentState === AgentState.LOADING ||
-      curAgentState === AgentState.STOPPED
+      agentState.curAgentState === AgentState.LOADING ||
+      agentState.curAgentState === AgentState.STOPPED
     ) {
       return;
     }
     dispatch(setRefreshID(Math.random()));
-    setFiles(await listFiles("/"));
-  };
+    setFiles(await listFiles(`/${codeState.workspaceFolder || ""}`));
+  }, [agentState, codeState.workspaceFolder, dispatch]);
 
   const uploadFileData = async (toAdd: FileList) => {
     try {
-      await uploadFiles(toAdd);
       await refreshWorkspace();
+      await uploadFiles(codeState.workspaceFolder, toAdd);
     } catch (error) {
       toast.error("ws", "Error uploading file");
     }
@@ -121,7 +125,7 @@ function FileExplorer() {
     (async () => {
       await refreshWorkspace();
     })();
-  }, [curAgentState]);
+  }, [agentState, refreshWorkspace]);
 
   React.useEffect(() => {
     const enableDragging = () => {
@@ -139,7 +143,7 @@ function FileExplorer() {
       document.removeEventListener("dragenter", enableDragging);
       document.removeEventListener("drop", disableDragging);
     };
-  }, []);
+  }, [agentState]);
 
   if (!files.length) {
     return null;

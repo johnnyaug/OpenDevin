@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from opendevin.core.config import config
 from opendevin.events.action import (
     AgentRecallAction,
@@ -110,7 +112,11 @@ class ServerRuntime(Runtime):
         # TODO: use self.file_store
         working_dir = self.sandbox.get_working_directory()
         return await write_file(
-            action.path, working_dir, action.content, action.start, action.end
+            action.path,
+            working_dir,
+            action.content,
+            action.start,
+            action.end,
         )
 
     async def browse(self, action: BrowseURLAction) -> Observation:
