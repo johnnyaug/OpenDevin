@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   IoIosArrowBack,
   IoIosArrowForward,
-  IoIosRefresh,
   IoIosCloudUpload,
+  IoIosRefresh,
 } from "react-icons/io";
 import { twMerge } from "tailwind-merge";
+import { useSelector } from "react-redux";
+import toast from "#/utils/toast";
 import {
   WorkspaceFile,
   getWorkspace,
@@ -14,7 +16,7 @@ import {
 import IconButton from "../IconButton";
 import ExplorerTree from "./ExplorerTree";
 import { removeEmptyNodes } from "./utils";
-import toast from "#/utils/toast";
+import { RootState } from "#/store";
 
 interface ExplorerActionsProps {
   onRefresh: () => void;
@@ -93,11 +95,13 @@ function FileExplorer({ onFileClick }: FileExplorerProps) {
   const [workspace, setWorkspace] = React.useState<WorkspaceFile>();
   const [isHidden, setIsHidden] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-
-  const getWorkspaceData = async () => {
-    const wsFile = await getWorkspace();
+  const { agent: curAgentState, code: codeState } = useSelector(
+    (state: RootState) => state,
+  );
+  const getWorkspaceData = useCallback(async () => {
+    const wsFile = await getWorkspace(codeState.workspaceFolder.name);
     setWorkspace(removeEmptyNodes(wsFile));
-  };
+  }, [codeState.workspaceFolder.name]);
 
   const selectFileInput = () => {
     fileInputRef.current?.click(); // Trigger the file browser
@@ -108,7 +112,7 @@ function FileExplorer({ onFileClick }: FileExplorerProps) {
     if (!file) return;
 
     try {
-      await uploadFile(file);
+      await uploadFile(codeState.workspaceFolder.name, file);
       await getWorkspaceData(); // Refresh the workspace to show the new file
     } catch (error) {
       toast.stickyError("ws", "Error uploading file");
@@ -119,7 +123,7 @@ function FileExplorer({ onFileClick }: FileExplorerProps) {
     (async () => {
       await getWorkspaceData();
     })();
-  }, []);
+  }, [curAgentState, getWorkspaceData]);
 
   return (
     <div
@@ -133,7 +137,13 @@ function FileExplorer({ onFileClick }: FileExplorerProps) {
           {workspace && (
             <ExplorerTree
               root={workspace}
-              onFileClick={onFileClick}
+              onFileClick={(path) =>
+                onFileClick(
+                  (codeState.workspaceFolder.name
+                    ? `${codeState.workspaceFolder.name}/`
+                    : "") + path,
+                )
+              }
               defaultOpen
             />
           )}
@@ -142,7 +152,7 @@ function FileExplorer({ onFileClick }: FileExplorerProps) {
         <ExplorerActions
           isHidden={isHidden}
           toggleHidden={() => setIsHidden((prev) => !prev)}
-          onRefresh={getWorkspaceData}
+          onRefresh={() => getWorkspaceData()}
           onUpload={selectFileInput}
         />
       </div>

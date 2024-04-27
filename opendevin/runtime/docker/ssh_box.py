@@ -135,6 +135,7 @@ class DockerSSHBox(Sandbox):
     def __init__(
         self,
         container_image: str | None = None,
+        workspace_mount_path: str | None = None,
         timeout: int = 120,
         sid: str | None = None,
     ):
@@ -155,6 +156,7 @@ class DockerSSHBox(Sandbox):
             sid + str(uuid.uuid4()) if sid is not None else str(uuid.uuid4())
         )
 
+        self.workspace_mount_path = workspace_mount_path or config.workspace_mount_path
         # TODO: this timeout is actually essential - need a better way to set it
         # if it is too short, the container may still waiting for previous
         # command to finish (e.g. apt-get update)
@@ -535,7 +537,7 @@ class DockerSSHBox(Sandbox):
 
     @property
     def volumes(self):
-        mount_dir = config.workspace_mount_path
+        mount_dir = self.workspace_mount_path
         logger.info(f'Mounting workspace directory: {mount_dir}')
         return {
             mount_dir: {'bind': self.sandbox_workspace_dir, 'mode': 'rw'},
@@ -570,7 +572,6 @@ class DockerSSHBox(Sandbox):
                         'See https://github.com/OpenDevin/OpenDevin/issues/897 for more information.'
                     )
                 )
-
             # start the container
             logger.info(f'Mounting volumes: {self.volumes}')
             self.container = self.docker_client.containers.run(

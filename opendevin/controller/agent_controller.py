@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Optional, Type
 
 from agenthub.codeact_agent.codeact_agent import CodeActAgent
@@ -62,6 +63,7 @@ class AgentController:
         max_chars: int = MAX_CHARS,
         sandbox: Optional[Sandbox] = None,
         remind_iterations: bool = config.remind_iterations,
+        workspace_subdirectory: str = '',
     ):
         """Initializes a new instance of the AgentController class.
 
@@ -81,12 +83,16 @@ class AgentController:
         )
         self.max_iterations = max_iterations
 
+        self.workspace_subdirectory = workspace_subdirectory
+        self.workspace = str(Path(config.workspace_base, workspace_subdirectory or ''))
         self.remind_iterations = remind_iterations
         if self.remind_iterations:
             logger.info(
                 'Iteration reminder is ENABLED: agent will be reminded of remaining turns.'
             )
-        self.runtime = ServerRuntime(sandbox=sandbox, sid=self.id)
+        self.runtime = ServerRuntime(
+            sandbox=sandbox, sid=self.id, workspace=self.workspace
+        )
         self.max_chars = max_chars
 
         # Initialize agent-required plugins for sandbox (if any)
@@ -238,6 +244,7 @@ class AgentController:
             event_stream=self.event_stream,
             max_iterations=self.max_iterations,
             max_chars=self.max_chars,
+            workspace_subdirectory=self.workspace_subdirectory,
         )
         task = action.inputs.get('task') or ''
         await self.delegate.setup_task(task, action.inputs)

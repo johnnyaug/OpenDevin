@@ -108,7 +108,6 @@ class AgentUnit:
         api_base = config.llm.base_url
         max_iterations = args.get(ConfigType.MAX_ITERATIONS, config.max_iterations)
         max_chars = args.get(ConfigType.MAX_CHARS, config.llm.max_chars)
-
         logger.info(f'Creating agent {agent_cls} using LLM {model}')
         llm = LLM(model=model, api_key=api_key, base_url=api_base)
         if self.controller is not None:
@@ -120,6 +119,7 @@ class AgentUnit:
                 agent=Agent.get_cls(agent_cls)(llm),
                 max_iterations=int(max_iterations),
                 max_chars=int(max_chars),
+                workspace_subdirectory=args.get('WORKSPACE_SUBDIR', ''),
             )
         except Exception as e:
             logger.exception(f'Error creating controller: {e}')
@@ -134,7 +134,9 @@ class AgentUnit:
         Args:
             event: The agent event (Observation or Action).
         """
-        if event.source == 'agent' and not isinstance(event, (NullAction, NullObservation)):
+        if event.source == 'agent' and not isinstance(
+            event, (NullAction, NullObservation)
+        ):
             await self.send(event.to_dict())
         return
 

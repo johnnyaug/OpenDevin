@@ -10,7 +10,7 @@ from opendevin.events.observation import (
 )
 
 
-def resolve_path(file_path, working_directory):
+def resolve_path(file_path, working_directory, workspace):
     path_in_sandbox = Path(file_path)
 
     # Apply working directory
@@ -31,7 +31,7 @@ def resolve_path(file_path, working_directory):
     )
 
     # Get path relative to host
-    path_in_host_workspace = Path(config.workspace_base) / path_in_workspace
+    path_in_host_workspace = Path(workspace) / path_in_workspace
 
     return path_in_host_workspace
 
@@ -53,9 +53,9 @@ def read_lines(all_lines: list[str], start=0, end=-1):
         return all_lines[begin:end]
 
 
-async def read_file(path, workdir, start=0, end=-1) -> Observation:
+async def read_file(path, workdir, workspace, start=0, end=-1) -> Observation:
     try:
-        whole_path = resolve_path(path, workdir)
+        whole_path = resolve_path(path, workdir, workspace)
     except PermissionError:
         return ErrorObservation(f'Malformed paths not permitted: {path}')
 
@@ -84,11 +84,11 @@ def insert_lines(
     return new_lines
 
 
-async def write_file(path, workdir, content, start=0, end=-1) -> Observation:
+async def write_file(path, workdir, workspace, content, start=0, end=-1) -> Observation:
     insert = content.split('\n')
 
     try:
-        whole_path = resolve_path(path, workdir)
+        whole_path = resolve_path(path, workdir, workspace)
         if not os.path.exists(os.path.dirname(whole_path)):
             os.makedirs(os.path.dirname(whole_path))
         mode = 'w' if not os.path.exists(whole_path) else 'r+'

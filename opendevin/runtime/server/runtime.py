@@ -47,12 +47,19 @@ class ServerRuntime(Runtime):
 
     async def read(self, action: FileReadAction) -> Observation:
         working_dir = self.sandbox.get_working_directory()
-        return await read_file(action.path, working_dir, action.start, action.end)
+        return await read_file(
+            action.path, working_dir, self.workspace, action.start, action.end
+        )
 
     async def write(self, action: FileWriteAction) -> Observation:
         working_dir = self.sandbox.get_working_directory()
         return await write_file(
-            action.path, working_dir, action.content, action.start, action.end
+            action.path,
+            working_dir,
+            self.workspace,
+            action.content,
+            action.start,
+            action.end,
         )
 
     async def browse(self, action: BrowseURLAction) -> Observation:

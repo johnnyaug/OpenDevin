@@ -29,13 +29,22 @@ from opendevin.runtime.browser.browser_env import BrowserEnv
 from opendevin.runtime.plugins import PluginRequirement
 
 
-def create_sandbox(sid: str = 'default', sandbox_type: str = 'exec') -> Sandbox:
+def create_sandbox(
+    sid: str = 'default',
+    sandbox_type: str = 'exec',
+    workspace: str | None = None,
+) -> Sandbox:
+    workspace = workspace or config.workspace_base
     if sandbox_type == 'exec':
-        return DockerExecBox(sid=sid, timeout=config.sandbox_timeout)
+        return DockerExecBox(
+            sid=sid, timeout=config.sandbox_timeout, workspace_mount_path=workspace
+        )
     elif sandbox_type == 'local':
-        return LocalBox(timeout=config.sandbox_timeout)
+        return LocalBox(timeout=config.sandbox_timeout, workspace=workspace)
     elif sandbox_type == 'ssh':
-        return DockerSSHBox(sid=sid, timeout=config.sandbox_timeout)
+        return DockerSSHBox(
+            sid=sid, timeout=config.sandbox_timeout, workspace_mount_path=workspace
+        )
     elif sandbox_type == 'e2b':
         return E2BBox(timeout=config.sandbox_timeout)
     else:
@@ -56,10 +65,13 @@ class Runtime:
         self,
         sandbox: Sandbox | None = None,
         sid: str = 'default',
+        workspace: str | None = None,
     ):
         self.sid = sid
+        self.workspace = workspace or config.workspace_base
+
         if sandbox is None:
-            self.sandbox = create_sandbox(sid, config.sandbox_type)
+            self.sandbox = create_sandbox(sid, config.sandbox_type, self.workspace)
         else:
             self.sandbox = sandbox
         self.browser = BrowserEnv()
